@@ -1,0 +1,12 @@
+Unable to resolve module expo-font/build/server from C:\Users\hamle\OneDrive\Desktop\School\Y2\Y2 - S1\Java OOP\Group Project\BrainBuddy\node_modules\expo-router\build\static\renderStaticContent.js: expo-font/build/server could not be found within the project or in these directories:
+  ..\..\node_modules\expo-router\node_modules
+  ..\..\node_modules
+  node_modules
+  ..\..\node_modules
+  47 | require("@expo/metro-runtime");
+  48 | const native_1 = require("@react-navigation/native");
+> 49 | const Font = __importStar(require("expo-font/build/server"));
+     |                                    ^
+  50 | const react_1 = __importDefault(require("react"));
+  51 | const server_node_1 = __importDefault(require("react-dom/server.node"));
+  52 | // @ts-expect-error: TODO(@kitten): Define this type (seems to differ from react-native)

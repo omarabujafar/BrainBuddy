@@ -1,0 +1,477 @@
+TITLE: BrainBuddy — A to Z Setup, Expo + Native Blocking, One-step-at-a-time
+
+READ ME FIRST
+- You are my engineering copilot. Speak to me in simple, clear language.
+- We will proceed one step at a time. After each step, stop and ask me to type “next” before you continue.
+- Do not skip steps. Do not batch steps. One step at a time only.
+- If something is ambiguous, ask up to 3 short questions, then wait for my answer.
+
+# PRODUCT PROMPT — What BrainBuddy Is
+
+**BrainBuddy** is a playful, privacy-respecting mobile app that helps people stop doomscrolling and build focus. It tracks time spent in selected “brainrot” apps and **intercepts usage** with a friendly **brain avatar** that **loses health when you binge** and **recovers/evolves when you focus**. Users set **blocking rules** (usage caps, time-of-day windows, weekday/weekend schedules, and optional environment triggers like Wi-Fi or location). When a blocked app is opened, BrainBuddy shows an **avatar conversation screen** and enforces the rule (standard mode allows a deliberate bypass with a penalty; **Hardcore mode** forbids bypasses—Pro feature).
+
+**How it works (high-level):**
+
+* **Native enforcement:** iOS Screen Time APIs (FamilyControls/DeviceActivity/ManagedSettings), Android UsageStats (+ optional Accessibility) via small native modules bridged to Expo.
+* **Core loops:**
+
+  1. **Decay loop:** time on brainrot apps → avatar health drops → warnings/intercept.
+  2. **Growth loop:** focus sessions + habit pairing (e.g., “15m TikTok → 5m reading”) earn brain points, restore health, and evolve the avatar.
+  3. **Accountability loop:** insights, weekly recaps, and optional **buddy reports** (Pro).
+* **Gamification:** avatar personalities (funny/strict/supportive), evolutions, streaks, **brain points economy** (earn with focus, spend for controlled playtime).
+* **Insights:** daily/weekly usage, category breakdowns, heatmaps, trends; **adaptive AI suggestions** propose smarter schedules (Pro).
+* **Notifications:** approaching/exceeded-limit alerts, contextual nudges, daily/weekly recaps.
+
+**Privacy & safety:**
+
+* Tracks **usage totals only** (per app/category). **No content inspection.**
+* Local tokens in SecureStore; Postgres with **Row Level Security**; optional local-only mode (reduced cloud features).
+* Clear permissions prompts (usage access, Screen Time, notifications, optional location/Wi-Fi).
+* Not a spyware/parental-surveillance tool; it’s **self-control by design**.
+
+**Monetization (example):**
+
+* **Free:** core blocking (one schedule), basic avatar, focus timer, basic insights.
+* **Pro:** Hardcore mode, unlimited schedules, environment triggers, avatar personalities/cosmetics, habit pairing, brain points economy, buddy mode, deep analytics, adaptive suggestions.
+
+**Tech summary:** Expo (React Native + TypeScript), small native modules for blocking, Supabase (Postgres + Auth + Edge Functions) as source of truth, RevenueCat for subscriptions, expo-notifications for push, PostHog + Sentry for analytics and errors.
+
+
+🎨 Visual Direction
+
+Premium minimalism with playful warmth. Think Apple Fitness / Apple Music meets Duolingo’s personality.
+
+Soft rounded shapes, large cards, floating layers. Depth is created with glassmorphism, shadows, and gradients—not clutter.
+
+Avatar is the emotional core. Your evolving brain character is central, animated with Lottie/Moti, always visible in the dashboard.
+
+📐 Layout System
+
+Home/Dashboard Screen:
+
+Hero section at top: Brain avatar with current health % and mood.
+
+Quick stats (today’s screen time, streak, brain points).
+
+CTA buttons: Start Focus Session, View Rules, Insights.
+
+Navigation:
+
+Bottom tab bar (Apple-style):
+
+Dashboard (avatar + stats)
+
+Rules (schedule, caps, blocking)
+
+Focus (Pomodoro + habit pairing)
+
+Insights (reports + analytics)
+
+Premium (Pro features/paywall)
+
+Cards & Widgets:
+
+Rounded cards for schedules, usage warnings, and focus sessions.
+
+Daily challenges (e.g., “Stay under 2h TikTok today”) as large colored banners.
+
+Insights: graph cards with clean typography + subtle gradients.
+
+🌈 Color Palette (Optimistic + Playful Premium)
+
+Inspired by your need for energy, optimism, and fun—without losing polish:
+
+Primary: Vibrant Coral (#FF6B6B) — lively, energetic (warnings, avatar damage).
+
+Secondary: Bright Sky Blue (#4FC3F7) — calm + optimistic (healthy state).
+
+Accent: Fresh Lime Green (#81C784) — rewarding, growth (points, streaks).
+
+Neutrals: Soft Warm Gray (#F5F5F7), Deep Charcoal (#1C1C1E) for text backgrounds.
+
+Gradients: Sunset Orange → Pink, Aqua → Violet for banners and avatar moods.
+
+This keeps it playful but premium, more uplifting than the darker palettes in your references.
+
+✨ Interaction Feel
+
+Animations:
+
+Smooth spring transitions, micro-interactions (avatar reacts when you hit/exceed limit).
+
+Floating card transitions (similar to iOS Wallet/Apple Music).
+
+Gestures:
+
+Swipe down on avatar for quick health summary.
+
+Swipe left on app list to adjust rules.
+
+Notifications:
+
+Minimal, emoji-infused messages (“🧠 Your brain is cracking! 10m left on TikTok.”).
+
+📱 Example Screen Flow
+
+Dashboard: Avatar + today’s progress, brain health meter, focus streak.
+
+Rules: Schedule view like iOS calendar but simplified; toggles and sliders.
+
+Focus: Big CTA for Pomodoro; playful animations when session completes.
+
+Insights: Heatmap, top apps, weekly recap card with encouraging tone.
+
+Premium: Shiny comparison page with bright gradients, avatars showing off Pro personalities.
+
+SCOPE
+- Mobile App: Expo (React Native) + TypeScript
+- Native Blocking: iOS Screen Time (FamilyControls, DeviceActivity, ManagedSettings via Swift), Android UsageStats/Accessibility via Kotlin; bridged to RN via config plugins
+- Backend: Supabase (Postgres + Auth + RLS + Edge Functions)  *(Firebase is a valid swap; we’ll proceed with Supabase)*
+- Subscriptions: RevenueCat (App Store + Google Play)
+- Notifications: expo-notifications (APNs/FCM)
+- Analytics/Flags: PostHog (or Amplitude) + Sentry
+- Avatar/Gamification: Lottie, Reanimated/Moti, local game state synced to DB
+- CI/CD & Release: EAS Build/Submit + GitHub Actions
+- Security: RLS, SecureStore, least privilege, privacy-first usage aggregation
+- Goal: App runs locally (iOS/Android), basic backend live with auth, rules & usage schemas, purchases working in sandbox, and one native blocking path per platform compiled.
+
+CONVENTIONS
+- camelCase for identifiers; PascalCase for components/classes.
+- Keep modules small and feature-scoped (features/blocking, features/avatar).
+- Never commit secrets. .env for local only; store prod/staging secrets in Supabase/RevenueCat/Store consoles and EAS secrets.
+- Money/points stored as integers (minor units / whole points).
+- Each feature folder has a short README with purpose and usage.
+
+PREREQUISITES CHECK (stop after each check)
+1) Confirm Node.js 20+ is installed: `node -v`.
+2) Confirm npm 9+ is installed: `npm -v`.
+3) Confirm Git is installed: `git --version`.
+4) Confirm Xcode (latest) + CocoaPods: `pod --version` (macOS).
+5) Confirm Android Studio + SDK + Java 17: `java -version`.
+6) Confirm Expo CLI available (npx is fine): `npx expo --version`.
+7) Confirm you have Apple Developer & Google Play developer accounts (for later).
+8) Confirm Supabase account & project access.
+9) Confirm RevenueCat account: `rc -v` (optional CLI) or dashboard access.
+— Stop and wait for “next”.
+
+SECTION A: REPO SCAFFOLD
+A1) Create repo and base folders.
+- Commands:
+  mkdir brainbuddy
+  cd brainbuddy
+  git init
+  mkdir -p apps/mobile packages/native-ios packages/native-android infra/supabase docs
+- Stop and wait for “next”.
+
+A2) Create .gitignore.
+- File .gitignore:
+  node_modules
+  .env
+  .DS_Store
+  .expo
+  ios
+  android
+  dist
+  build
+  coverage
+  .idea
+  .eas
+- Stop and wait for “next”.
+
+A3) Initialize a workspace (npm).
+- Commands:
+  npm init -y
+  npm pkg set workspaces='["apps/*","packages/*"]'
+- Stop and wait for “next”.
+
+SECTION B: EXPO APP SKELETON
+B1) Scaffold Expo (TypeScript) in apps/mobile.
+- Commands:
+  cd apps/mobile
+  npx create-expo-app@latest . --template tabs@49 --no-install
+  npm i
+- Stop and wait for “next”.
+
+B2) Add core libraries.
+- Commands:
+  npm i @tanstack/react-query zustand immer react-hook-form zod
+  npm i lottie-react-native react-native-reanimated moti
+  npm i @react-native-async-storage/async-storage react-native-mmkv expo-secure-store
+  npm i expo-notifications expo-router
+  npm i @supabase/supabase-js
+  npm i posthog-react-native sentry-expo
+  npm i @revenuecat/purchases-react-native
+  npm i expo-location expo-network expo-haptics expo-task-manager expo-background-fetch
+  npm i react-native-svg
+  npm i -D @types/node
+- Stop and wait for “next”.
+
+B3) Configure Expo Router & project config.
+- Ensure app/ structure exists (from tabs template). In app/_layout.tsx, set up QueryClientProvider and Zustand store injection (placeholder ok).
+- Update app.json (or app.config.ts) with:
+  - Name: BrainBuddy
+  - Slug: brainbuddy
+  - iOS bundleId & Android package (choose unique IDs, e.g., com.yourname.brainbuddy)
+  - Plugins list will be updated later for native modules.
+- Stop and wait for “next”.
+
+B4) Verify app boots.
+- Commands:
+  npx expo start
+- Run iOS simulator and Android emulator; confirm starter tabs load.
+- Stop and wait for “next”.
+
+SECTION C: SUPABASE BACKEND BOOTSTRAP
+C1) Create Supabase project (dashboard) and get URL/anon/service keys.
+- Save the Project URL and anon key for the app; keep service role key for server functions only.
+- Stop and wait for “next”.
+
+C2) Initialize Supabase schema locally (SQL).
+- Create infra/supabase/schema.sql with initial tables:
+  - profiles (userId uuid pk, displayName, avatarStyle, decayRate, createdAt)
+  - blocking_rules (id uuid pk, userId, type text, payload jsonb, enabled boolean, createdAt)
+  - usage_summary_daily (userId, date, totalMinutes int, byApp jsonb, violations int)
+  - avatar_state (userId, date, health int, evolutionStage text, brainPoints int)
+  - streaks (userId, current int, longest int)
+  - buddies (userId, buddyUserId, status text, createdAt)
+  - RLS policies: auth.uid() = userId for user-owned rows; insert/update ownership checks.
+- Stop and wait for “next”.
+
+C3) Apply schema.
+- Option A: Supabase SQL editor → paste & run schema.sql.
+- Option B: Supabase CLI (if installed) → run migration.
+- Stop and wait for “next”.
+
+C4) Create a service function (Edge Function placeholder).
+- In Supabase dashboard, create an Edge Function weekly-recap (placeholder returning 200 JSON); we’ll wire later.
+- Stop and wait for “next”.
+
+SECTION D: APP ENV & CLIENT SETUP
+D1) Create env files.
+- In apps/mobile, add .env.example:
+  EXPO_PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+  EXPO_PUBLIC_SUPABASE_ANON_KEY=replace
+  POSTHOG_API_KEY=replace
+  SENTRY_DSN=replace
+- Copy to .env and fill local values.
+- Stop and wait for “next”.
+
+D2) Create Supabase client.
+- Create apps/mobile/lib/supabase.ts:
+  import { createClient } from '@supabase/supabase-js';
+  const url = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+  const anon = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+  export const supabase = createClient(url, anon, { auth: { persistSession: true } });
+- Stop and wait for “next”.
+
+SECTION E: AUTH & BASIC DATA FLOW
+E1) Add simple email/password auth (dev).
+- Implement sign up / sign in screens hitting supabase.auth.signUp/signInWithPassword.
+- Save session; create profiles row on first login (if absent).
+- Stop and wait for “next”.
+
+E2) Seed minimal data.
+- From app, after login, create a default blocking_rules example row with type usageCap and payload { minutesPerDay: 60, packageIds: [] }.
+- Stop and wait for “next”.
+
+SECTION F: ANALYTICS & CRASHES
+F1) Add Sentry.
+- Follow sentry-expo docs to wrap the app and set SENTRY_DSN.
+- Trigger a test error to verify in dashboard.
+- Stop and wait for “next”.
+
+F2) Add PostHog.
+- Initialize in root component; track app_opened, login_success, rule_created.
+- Stop and wait for “next”.
+
+SECTION G: NOTIFICATIONS
+G1) Configure expo-notifications.
+- Ask permission on first run; print push token to console.
+- Add a local notification on “limit approaching” (stub).
+- Stop and wait for “next”.
+
+G2) Server push placeholder.
+- Create Supabase Edge Function send-push (HTTP POST expects {token,title,body}); for now just log payload.
+- Stop and wait for “next”.
+
+SECTION H: REVENUECAT (SUBSCRIPTIONS)
+H1) Dashboard setup.
+- In RevenueCat, create app for iOS and Android, products (monthly, yearly), an entitlement named pro.
+- Stop and wait for “next”.
+
+H2) Integrate SDK.
+- In app init, configure Purchases with API keys.
+- On login, call getCustomerInfo(); if entitlement pro active, set hasPro=true in Zustand store.
+- Stop and wait for “next”.
+
+SECTION I: CORE FEATURES (APP)
+I1) Routing scaffolding.
+- Create screens: /dashboard, /rules, /focus, /avatar, /insights, /premium.
+- Place them under app/ with expo-router. Add tabs or stack as preferred.
+- Stop and wait for “next”.
+
+I2) Zustand stores.
+- useAuthStore, useRulesStore, useAvatarStore, useEconomyStore (brainPoints), useInsightsStore.
+- Persist lightweight state with MMKV.
+- Stop and wait for “next”.
+
+I3) React Query hooks.
+- useRulesQuery, useTodayUsageQuery, useAvatarStateMutation, wired to Supabase tables.
+- Stop and wait for “next”.
+
+I4) Focus timer (Pomodoro).
+- Implement 25m/5m cycles; upon completion, add brainPoints and small health restore; write an events row in Supabase.
+- Stop and wait for “next”.
+
+I5) Avatar v1.
+- Add Lottie animations for Healthy / Cracked / Rotten; drive by avatar_state.health.
+- Stop and wait for “next”.
+
+SECTION J: NATIVE BLOCKING — iOS (SWIFT MODULE)
+J1) Prebuild for config plugins.
+- From apps/mobile: npx expo prebuild -p ios
+- Stop and wait for “next”.
+
+J2) Create config plugin & native module skeleton.
+- In packages/native-ios, add:
+  - plugin/index.js (Expo config plugin to add Screen Time capabilities/entitlements and Swift files)
+  - ios/BrainBuddyBlocking.swift (RN module using FamilyControls/DeviceActivity)
+- Add plugin to app.json → "plugins": ["../../packages/native-ios/plugin"]
+- Stop and wait for “next”.
+
+J3) Implement authorization + simple shield.
+- In Swift:
+  - AuthorizationCenter.shared.requestAuthorization(for: .individual)
+  - Present FamilyActivityPicker to choose apps
+  - Apply shield via ManagedSettingsStore().shield.applications = ...
+- Expose JS methods: requestAuthorization(), openPicker(), setShielded(bundleIds: string[]).
+- Stop and wait for “next”.
+
+J4) Build & run on iOS simulator/device.
+- npx expo run:ios
+- Verify picker opens and shield applies (note: some Screen Time features require device, not simulator).
+- Stop and wait for “next”.
+
+SECTION K: NATIVE BLOCKING — ANDROID (KOTLIN MODULE)
+K1) Prebuild for Android.
+- From apps/mobile: npx expo prebuild -p android
+- Stop and wait for “next”.
+
+K2) Create config plugin & module.
+- In packages/native-android, add:
+  - plugin/index.js to modify AndroidManifest.xml (PACKAGE_USAGE_STATS, optional ACCESSIBILITY, overlay)
+  - android/src/main/java/.../BrainBuddyBlockingModule.kt
+- Add plugin to app.json plugins array.
+- Stop and wait for “next”.
+
+K3) Implement basic usage detection + intercept.
+- Kotlin:
+  - Request PACKAGE_USAGE_STATS (open Settings page)
+  - Query UsageStatsManager for today per package
+  - Optional: AccessibilityService to detect foreground package; if blocked, launch an Activity showing the avatar Intercept Screen
+- JS methods: requestPermissions(), getTodayUsage(), setBlockingRules(...).
+- Stop and wait for “next”.
+
+K4) Build & run Android.
+- npx expo run:android
+- Grant usage access; confirm intercept Activity appears for a test package.
+- Stop and wait for “next”.
+
+SECTION L: ENVIRONMENT-BASED TRIGGERS (PREMIUM)
+L1) Location & geofences.
+- Use expo-location: request Always permission; set geofences for school/work/home; on enter/exit, toggle rules in app state.
+- Stop and wait for “next”.
+
+L2) Wi-Fi SSID triggers.
+- Use expo-network to read SSID and switch rule sets accordingly.
+- Stop and wait for “next”.
+
+SECTION M: INSIGHTS & REPORTS
+M1) Daily aggregation job.
+- Supabase Edge Function rollup-usage (cron) to compute usage_summary_daily and refresh streaks.
+- Stop and wait for “next”.
+
+M2) Insights screen.
+- Show daily/weekly totals, top apps, simple heatmap (by hour bucket), trends.
+- Stop and wait for “next”.
+
+SECTION N: PREMIUM GATING
+N1) Lock features behind hasPro.
+- Hardcore mode, unlimited schedules, environment triggers, avatar cosmetics, brain points economy, buddy reports.
+- Stop and wait for “next”.
+
+N2) Paywall screen.
+- Clear Free vs Pro comparison; CTA to purchase monthly/yearly; use RevenueCat purchasePackage.
+- Stop and wait for “next”.
+
+SECTION O: EAS, SECRETS, AND BUILDS
+O1) Initialize EAS.
+- In apps/mobile: npx expo install expo-dev-client then eas login and eas init
+- Stop and wait for “next”.
+
+O2) Set EAS secrets.
+- Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY, POSTHOG_API_KEY, SENTRY_DSN, RevenueCat keys in EAS project secrets.
+- Stop and wait for “next”.
+
+O3) Dev build.
+- eas build --profile development --platform all
+- Install on devices; verify login, basic rules, and notifications.
+- Stop and wait for “next”.
+
+SECTION P: CI/CD
+P1) GitHub Actions CI.
+- Add .github/workflows/ci.yml to run npm ci, lint, TypeScript check, and expo-doctor.
+- Stop and wait for “next”.
+
+P2) Build & submit workflow.
+- .github/workflows/build.yml to call eas build and eas submit on tag; require manual approval for submit.
+- Stop and wait for “next”.
+
+SECTION Q: SECURITY & PRIVACY
+Q1) App hardening.
+- Use expo-secure-store for tokens; biometric lock (expo-local-authentication) on settings/paywall; strict CORS for any custom endpoints.
+- Stop and wait for “next”.
+
+Q2) Database policies.
+- Confirm all Supabase tables use RLS; verify policies by userId match; create read-only RPCs if needed.
+- Stop and wait for “next”.
+
+SECTION R: TESTING
+R1) Unit tests.
+- Add Jest & @testing-library/react-native for UI and pure functions (split/economy/health calc).
+- Stop and wait for “next”.
+
+R2) E2E (critical flows).
+- Detox (optional) for: login, create rule, hit intercept, focus session completes, paywall purchase (sandbox).
+- Stop and wait for “next”.
+
+SECTION S: STORE READINESS
+S1) iOS entitlements & app privacy.
+- Ensure Family Controls entitlement requested if needed; fill App Privacy details; push TestFlight build.
+- Stop and wait for “next”.
+
+S2) Android permissions.
+- Explain why PACKAGE_USAGE_STATS and optional Accessibility are required in Play Console; upload internal testing build.
+- Stop and wait for “next”.
+
+SECTION T: FINAL CHECKLIST
+T1) Manual smoke tests:
+- Login, create rule, run focus, receive local/push notifications, avatar health changes, insights update.
+- iOS: Screen Time picker opens and applies a basic shield.
+- Android: Usage permission granted; intercept screen triggers.
+- Stop and wait for “next”.
+
+T2) Observability:
+- Sentry test error visible; PostHog events arriving; logs show key user actions.
+- Stop and wait for “next”.
+
+T3) Premium:
+- RevenueCat sandbox purchase unlocks Pro features; entitlement reflected on relaunch; gating respected.
+- Stop and wait for “next”.
+
+FINAL STOP
+- When I say “start”, begin at the very first step in PREREQUISITES CHECK.
+- After every single step, stop and wait for me to type “next”.
+- If I say “pause”, stop and ask what to clarify.
+- If I say “rollback”, guide me to revert the last change safely.
+- Never skip ahead. Never batch steps. One step at a time with me confirming “next” each time.
